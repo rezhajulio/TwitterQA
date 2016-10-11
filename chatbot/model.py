@@ -31,7 +31,7 @@ class Model:
     Achitecture:
         2 LTSM layers
     """
-    
+
     def __init__(self, args, textData):
         """
         Args:
@@ -44,8 +44,8 @@ class Model:
         self.args = args  # Keep track of the parameters of the model
 
         # Placeholders
-        self.encoderInputs  = None
-        self.decoderInputs  = None  # Same that decoderTarget plus the <go>
+        self.encoderInputs = None
+        self.decoderInputs = None  # Same that decoderTarget plus the <go>
         self.decoderTargets = None
         self.decoderWeights = None  # Adjust the learning to the target sentence size
 
@@ -66,24 +66,32 @@ class Model:
 
         # Creation of the rnn cell
         with tf.variable_scope("chatbot_cell"):  # TODO: How to make this appear on the graph ?
-            encoDecoCell = tf.nn.rnn_cell.BasicLSTMCell(self.args.hiddenSize, state_is_tuple=True)  # Or GRUCell, LSTMCell(args.hiddenSize)
-            #encoDecoCell = tf.nn.rnn_cell.DropoutWrapper(encoDecoCell, input_keep_prob=1.0, output_keep_prob=1.0)  # TODO: Custom values (WARNING: No dropout when testing !!!)
-            encoDecoCell = tf.nn.rnn_cell.MultiRNNCell([encoDecoCell] * self.args.numLayers, state_is_tuple=True)
+            encoDecoCell = tf.nn.rnn_cell.BasicLSTMCell(
+                self.args.hiddenSize, state_is_tuple=True)  # Or GRUCell, LSTMCell(args.hiddenSize)
+            # encoDecoCell = tf.nn.rnn_cell.DropoutWrapper(encoDecoCell,
+            # input_keep_prob=1.0, output_keep_prob=1.0)  # TODO: Custom values
+            # (WARNING: No dropout when testing !!!)
+            encoDecoCell = tf.nn.rnn_cell.MultiRNNCell(
+                [encoDecoCell] * self.args.numLayers, state_is_tuple=True)
 
         # Network input (placeholders)
 
         with tf.name_scope('placeholder_encoder'):
-            self.encoderInputs  = [tf.placeholder(tf.int32,   [None, ]) for _ in range(self.args.maxLengthEnco)]  # Batch size * sequence length * input dim
+            self.encoderInputs = [tf.placeholder(tf.int32,   [None, ]) for _ in range(
+                self.args.maxLengthEnco)]  # Batch size * sequence length * input dim
 
         with tf.name_scope('placeholder_decoder'):
-            self.decoderInputs  = [tf.placeholder(tf.int32,   [None, ], name='inputs') for _ in range(self.args.maxLengthDeco)]  # Same sentence length for input and output (Right ?)
-            self.decoderTargets = [tf.placeholder(tf.int32,   [None, ], name='targets') for _ in range(self.args.maxLengthDeco)]
-            self.decoderWeights = [tf.placeholder(tf.float32, [None, ], name='weights') for _ in range(self.args.maxLengthDeco)]
+            self.decoderInputs = [tf.placeholder(tf.int32,   [None, ], name='inputs') for _ in range(
+                self.args.maxLengthDeco)]  # Same sentence length for input and output (Right ?)
+            self.decoderTargets = [tf.placeholder(
+                tf.int32,   [None, ], name='targets') for _ in range(self.args.maxLengthDeco)]
+            self.decoderWeights = [tf.placeholder(
+                tf.float32, [None, ], name='weights') for _ in range(self.args.maxLengthDeco)]
 
         # Define the network
         # Here we use an embedding model, it takes integer as input and convert them into word vector for
         # better word representation
-        decoderOutputs, states = tf.nn.seq2seq.embedding_rnn_seq2seq(
+        decoderOutputs, states = tf.nn.seq2seq.embedding_attention_seq2seq(
             self.encoderInputs,  # List<[batch=?, inputDim=1]>, list of size args.maxLength
             self.decoderInputs,  # For training, we force the correct output (feed_previous=False)
             encoDecoCell,
@@ -91,7 +99,8 @@ class Model:
             self.textData.getVocabularySize(),  # Both encoder and decoder have the same number of class
             embedding_size=self.args.embeddingSize,  # Dimension of each word
             output_projection=None,  # Eventually
-            feed_previous=bool(self.args.test)  # When we test (self.args.test), we use previous output as next input (feed_previous)
+            # When we test (self.args.test), we use previous output as next input (feed_previous)
+            feed_previous=bool(self.args.test)
         )
 
         # For testing only
@@ -102,7 +111,8 @@ class Model:
         # For training only
         else:
             # Finally, we define the loss function
-            self.lossFct = tf.nn.seq2seq.sequence_loss(decoderOutputs, self.decoderTargets, self.decoderWeights, self.textData.getVocabularySize())
+            self.lossFct = tf.nn.seq2seq.sequence_loss(
+                decoderOutputs, self.decoderTargets, self.decoderWeights, self.textData.getVocabularySize())
             tf.scalar_summary('loss', self.lossFct)  # Keep track of the cost
 
             # Initialize the optimizer
@@ -113,7 +123,7 @@ class Model:
                 epsilon=1e-08
             )
             self.optOp = opt.minimize(self.lossFct)
-    
+
     def step(self, batch):
         """ Forward/training step operation.
         Does not perform run on itself but just return the operators to do so. Those have then to be run
@@ -129,17 +139,17 @@ class Model:
 
         if not self.args.test:  # Training
             for i in range(self.args.maxLengthEnco):
-                feedDict[self.encoderInputs[i]]  = batch.encoderSeqs[i]
+                feedDict[self.encoderInputs[i]] = batch.encoderSeqs[i]
             for i in range(self.args.maxLengthDeco):
-                feedDict[self.decoderInputs[i]]  = batch.decoderSeqs[i]
+                feedDict[self.decoderInputs[i]] = batch.decoderSeqs[i]
                 feedDict[self.decoderTargets[i]] = batch.targetSeqs[i]
                 feedDict[self.decoderWeights[i]] = batch.weights[i]
 
             ops = (self.optOp, self.lossFct)
         else:  # Testing (batchSize == 1)
             for i in range(self.args.maxLengthEnco):
-                feedDict[self.encoderInputs[i]]  = batch.encoderSeqs[i]
-            feedDict[self.decoderInputs[0]]  = [self.textData.goToken]
+                feedDict[self.encoderInputs[i]] = batch.encoderSeqs[i]
+            feedDict[self.decoderInputs[0]] = [self.textData.goToken]
 
             ops = (self.outputs,)
 

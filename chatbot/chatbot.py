@@ -87,41 +87,69 @@ class Chatbot:
         globalArgs = parser.add_argument_group('Global options')
         globalArgs.add_argument('--test',
                                 nargs='?',
-                                choices=[Chatbot.TestMode.ALL, Chatbot.TestMode.INTERACTIVE, Chatbot.TestMode.DAEMON],
+                                choices=[Chatbot.TestMode.ALL,
+                                         Chatbot.TestMode.INTERACTIVE, Chatbot.TestMode.DAEMON],
                                 const=Chatbot.TestMode.ALL, default=None,
                                 help='if present, launch the program try to answer all sentences from data/test/ with'
                                      ' the defined model(s), in interactive mode, the user can wrote his own sentences,'
                                      ' use daemon mode to integrate the chatbot in another program')
-        globalArgs.add_argument('--createDataset', action='store_true', help='if present, the program will only generate the dataset from the corpus (no training/testing)')
-        globalArgs.add_argument('--playDataset', type=int, nargs='?', const=10, default=None,  help='if set, the program  will randomly play some samples(can be use conjointly with createDataset if this is the only action you want to perform)')
-        globalArgs.add_argument('--reset', action='store_true', help='use this if you want to ignore the previous model present on the model directory (Warning: the model will be destroyed with all the folder content)')
-        globalArgs.add_argument('--verbose', action='store_true', help='When testing, will plot the outputs at the same time they are computed')
-        globalArgs.add_argument('--keepAll', action='store_true', help='If this option is set, all saved model will be keep (Warning: make sure you have enough free disk space or increase saveEvery)')  # TODO: Add an option to delimit the max size
-        globalArgs.add_argument('--modelTag', type=str, default=None, help='tag to differentiate which model to store/load')
-        globalArgs.add_argument('--rootDir', type=str, default=None, help='folder where to look for the models and data')
-        globalArgs.add_argument('--watsonMode', action='store_true', help='Inverse the questions and answer when training (the network try to guess the question)')
-        globalArgs.add_argument('--device', type=str, default=None, help='\'gpu\' or \'cpu\' (Warning: make sure you have enough free RAM), allow to choose on which hardware run the model')
-        globalArgs.add_argument('--seed', type=int, default=None, help='random seed for replication')
+        globalArgs.add_argument('--createDataset', action='store_true',
+                                help='if present, the program will only generate the dataset from the corpus (no training/testing)')
+        globalArgs.add_argument('--playDataset', type=int, nargs='?', const=10, default=None,
+                                help='if set, the program  will randomly play some samples(can be use conjointly with createDataset if this is the only action you want to perform)')
+        globalArgs.add_argument('--reset', action='store_true',
+                                help='use this if you want to ignore the previous model present on the model directory (Warning: the model will be destroyed with all the folder content)')
+        globalArgs.add_argument('--verbose', action='store_true',
+                                help='When testing, will plot the outputs at the same time they are computed')
+        # TODO: Add an option to delimit the max size
+        globalArgs.add_argument('--keepAll', action='store_true',
+                                help='If this option is set, all saved model will be keep (Warning: make sure you have enough free disk space or increase saveEvery)')
+        globalArgs.add_argument('--modelTag', type=str, default=None,
+                                help='tag to differentiate which model to store/load')
+        globalArgs.add_argument('--rootDir', type=str, default=None,
+                                help='folder where to look for the models and data')
+        globalArgs.add_argument('--watsonMode', action='store_true',
+                                help='Inverse the questions and answer when training (the network try to guess the question)')
+        globalArgs.add_argument('--device', type=str, default=None,
+                                help='\'gpu\' or \'cpu\' (Warning: make sure you have enough free RAM), allow to choose on which hardware run the model')
+        globalArgs.add_argument('--seed', type=int, default=None,
+                                help='random seed for replication')
 
         # Dataset options
         datasetArgs = parser.add_argument_group('Dataset options')
-        datasetArgs.add_argument('--corpus', type=str, default='cornell', help='corpus on which extract the dataset. Only one corpus available right now (Cornell)')
-        datasetArgs.add_argument('--datasetTag', type=str, default=None, help='add a tag to the dataset (file where to load the vocabulary and the precomputed samples, not the original corpus). Useful to manage multiple versions')  # The samples are computed from the corpus if it does not exist already. There are saved in \'data/samples/\'
-        datasetArgs.add_argument('--ratioDataset', type=float, default=1.0, help='ratio of dataset used to avoid using the whole dataset')  # Not implemented, useless ?
-        datasetArgs.add_argument('--maxLength', type=int, default=10, help='maximum length of the sentence (for input and output), define number of maximum step of the RNN')
+        datasetArgs.add_argument('--twitter_name', type=str, required=True,
+                                 help='Name of twitter account to download/use data from')
+        datasetArgs.add_argument('--max_tweets', type=int, default=3200,
+                                 help='Number of tweets to use at most')
+        datasetArgs.add_argument('--corpus', type=str, default='cornell',
+                                 help='corpus on which extract the dataset. Only one corpus available right now (Cornell)')
+        # The samples are computed from the corpus if it does not exist already.
+        # There are saved in \'data/samples/\'
+        datasetArgs.add_argument('--datasetTag', type=str, default=None,
+                                 help='add a tag to the dataset (file where to load the vocabulary and the precomputed samples, not the original corpus). Useful to manage multiple versions')
+        datasetArgs.add_argument('--ratioDataset', type=float, default=1.0,
+                                 help='ratio of dataset used to avoid using the whole dataset')  # Not implemented, useless ?
+        datasetArgs.add_argument('--maxLength', type=int, default=10,
+                                 help='maximum length of the sentence (for input and output), define number of maximum step of the RNN')
 
-        # Network options (Warning: if modifying something here, also make the change on save/loadParams() )
+        # Network options (Warning: if modifying something here, also make the
+        # change on save/loadParams() )
         nnArgs = parser.add_argument_group('Network options', 'architecture related option')
-        nnArgs.add_argument('--hiddenSize', type=int, default=256, help='number of hidden units in each RNN cell')
+        nnArgs.add_argument('--hiddenSize', type=int, default=256,
+                            help='number of hidden units in each RNN cell')
         nnArgs.add_argument('--numLayers', type=int, default=2, help='number of rnn layers')
-        nnArgs.add_argument('--embeddingSize', type=int, default=32, help='embedding size of the word representation')
+        nnArgs.add_argument('--embeddingSize', type=int, default=32,
+                            help='embedding size of the word representation')
 
         # Training options
         trainingArgs = parser.add_argument_group('Training options')
-        trainingArgs.add_argument('--numEpochs', type=int, default=30, help='maximum number of epochs to run')
-        trainingArgs.add_argument('--saveEvery', type=int, default=1000, help='nb of mini-batch step before creating a model checkpoint')
+        trainingArgs.add_argument('--numEpochs', type=int, default=30,
+                                  help='maximum number of epochs to run')
+        trainingArgs.add_argument('--saveEvery', type=int, default=1000,
+                                  help='nb of mini-batch step before creating a model checkpoint')
         trainingArgs.add_argument('--batchSize', type=int, default=10, help='mini-batch size')
-        trainingArgs.add_argument('--learningRate', type=float, default=0.001, help='Learning rate')
+        trainingArgs.add_argument('--learningRate', type=float,
+                                  default=0.001, help='Learning rate')
 
         return parser.parse_args(args)
 
@@ -140,7 +168,7 @@ class Chatbot:
         if not self.args.rootDir:
             self.args.rootDir = os.getcwd()  # Use the current working directory
 
-        #tf.logging.set_verbosity(tf.logging.INFO) # DEBUG, INFO, WARN (default), ERROR, or FATAL
+        # tf.logging.set_verbosity(tf.logging.INFO) # DEBUG, INFO, WARN (default), ERROR, or FATAL
 
         self.loadModelParams()  # Update the self.modelDir and self.globStep, for now, not used when loading Model (but need to be called before _getSummaryName)
 
@@ -173,7 +201,8 @@ class Chatbot:
         print('Initialize variables...')
         self.sess.run(tf.initialize_all_variables())
 
-        # Reload the model eventually (if it exist.), on testing mode, the models are not loaded here (but in predictTestset)
+        # Reload the model eventually (if it exist.), on testing mode, the models
+        # are not loaded here (but in predictTestset)
         if self.args.test != Chatbot.TestMode.ALL:
             self.managePreviousModel(self.sess)
 
@@ -190,7 +219,8 @@ class Chatbot:
             elif self.args.test == Chatbot.TestMode.DAEMON:
                 print('Daemon mode, running in background...')
             else:
-                raise RuntimeError('Unknown test mode: {}'.format(self.args.test))  # Should never happen
+                raise RuntimeError('Unknown test mode: {}'.format(
+                    self.args.test))  # Should never happen
         else:
             self.mainTrain(self.sess)
 
@@ -208,7 +238,8 @@ class Chatbot:
 
         self.textData.makeLighter(self.args.ratioDataset)  # Limit the number of training samples
 
-        mergedSummaries = tf.merge_all_summaries()  # Define the summary operator (Warning: Won't appear on the tensorboard graph)
+        # Define the summary operator (Warning: Won't appear on the tensorboard graph)
+        mergedSummaries = tf.merge_all_summaries()
         if self.globStep == 0:  # Not restoring from previous run
             self.writer.add_graph(sess.graph)  # First time only
 
@@ -220,7 +251,8 @@ class Chatbot:
             for e in range(self.args.numEpochs):
 
                 print()
-                print("----- Epoch {}/{} ; (lr={}) -----".format(e+1, self.args.numEpochs, self.args.learningRate))
+                print("----- Epoch {}/{} ; (lr={}) -----".format(e +
+                                                                 1, self.args.numEpochs, self.args.learningRate))
 
                 batches = self.textData.getBatches()
 
@@ -241,7 +273,9 @@ class Chatbot:
 
                 toc = datetime.datetime.now()
 
-                print("Epoch finished in {}".format(toc-tic))  # Warning: Will overflow if an epoch takes more than 24 hours, and the output isn't really nicer
+                # Warning: Will overflow if an epoch takes more than 24 hours, and the
+                # output isn't really nicer
+                print("Epoch finished in {}".format(toc - tic))
         except (KeyboardInterrupt, SystemExit):  # If the user press Ctrl+C while testing progress
             print('Interruption detected, exiting the program...')
 
@@ -260,7 +294,8 @@ class Chatbot:
 
         modelList = self._getModelList()
         if not modelList:
-            print('Warning: No model found in \'{}\'. Please train a model before trying to predict'.format(self.modelDir))
+            print('Warning: No model found in \'{}\'. Please train a model before trying to predict'.format(
+                self.modelDir))
             return
 
         # Predicting for each model present in modelDir
@@ -269,7 +304,8 @@ class Chatbot:
             self.saver.restore(sess, modelName)
             print('Testing...')
 
-            saveName = modelName[:-len(self.MODEL_EXT)] + self.TEST_OUT_SUFFIX  # We remove the model extension and add the prediction suffix
+            # We remove the model extension and add the prediction suffix
+            saveName = modelName[:-len(self.MODEL_EXT)] + self.TEST_OUT_SUFFIX
             with open(saveName, 'w') as f:
                 nbIgnored = 0
                 for line in tqdm(lines, desc='Sentences'):
@@ -280,7 +316,8 @@ class Chatbot:
                         nbIgnored += 1
                         continue  # Back to the beginning, try again
 
-                    predString = '{x[0]}{0}\n{x[1]}{1}\n\n'.format(question, self.textData.sequence2str(answer, clean=True), x=self.SENTENCES_PREFIX)
+                    predString = '{x[0]}{0}\n{x[1]}{1}\n\n'.format(
+                        question, self.textData.sequence2str(answer, clean=True), x=self.SENTENCES_PREFIX)
                     if self.args.verbose:
                         tqdm.write(predString)
                     f.write(predString)
@@ -311,12 +348,13 @@ class Chatbot:
                 print('Warning: sentence too long, sorry. Maybe try a simpler sentence.')
                 continue  # Back to the beginning, try again
 
-            print('{}{}'.format(self.SENTENCES_PREFIX[1], self.textData.sequence2str(answer, clean=True)))
-            
+            print('{}{}'.format(self.SENTENCES_PREFIX[
+                  1], self.textData.sequence2str(answer, clean=True)))
+
             if self.args.verbose:
                 print(self.textData.batchSeq2str(questionSeq, clean=True, reverse=True))
                 print(self.textData.sequence2str(answer))
-            
+
             print()
 
     def singlePredict(self, question, questionSeq=None):
@@ -385,13 +423,16 @@ class Chatbot:
             # Analysing directory content
             elif os.path.exists(modelName):  # Restore the model
                 print('Restoring previous model from {}'.format(modelName))
-                self.saver.restore(sess, modelName)  # Will crash when --reset is not activated and the model has not been saved yet
+                # Will crash when --reset is not activated and the model has not been saved yet
+                self.saver.restore(sess, modelName)
                 print('Model restored.')
             elif self._getModelList():
                 print('Conflict with previous models.')
-                raise RuntimeError('Some models are already present in \'{}\'. You should check them first (or re-try with the keepAll flag)'.format(self.modelDir))
+                raise RuntimeError(
+                    'Some models are already present in \'{}\'. You should check them first (or re-try with the keepAll flag)'.format(self.modelDir))
             else:  # No other model to conflict with (probably summary files)
-                print('No previous model found, but some files found at {}. Cleaning...'.format(self.modelDir))  # Warning: No confirmation asked
+                print('No previous model found, but some files found at {}. Cleaning...'.format(
+                    self.modelDir))  # Warning: No confirmation asked
                 self.args.reset = True
 
             if self.args.reset:
@@ -410,7 +451,8 @@ class Chatbot:
         """
         tqdm.write('Checkpoint reached: saving model (don\'t stop the run)...')
         self.saveModelParams()
-        self.saver.save(sess, self._getModelName())  # TODO: Put a limit size (ex: 3GB for the modelDir)
+        # TODO: Put a limit size (ex: 3GB for the modelDir)
+        self.saver.save(sess, self._getModelName())
         tqdm.write('Model saved.')
 
     def _getModelList(self):
@@ -427,7 +469,8 @@ class Chatbot:
         should be reset in managePreviousModel
         """
         # Compute the current model path
-        self.modelDir = os.path.join(self.args.rootDir, self.MODEL_DIR_BASE)
+        self.modelDir = os.path.join(
+            self.args.rootDir, self.MODEL_DIR_BASE, self.args.twitter_name)
         if self.args.modelTag:
             self.modelDir += '-' + self.args.modelTag
 
@@ -441,11 +484,15 @@ class Chatbot:
             # Check the version
             currentVersion = config['General'].get('version')
             if currentVersion != self.CONFIG_VERSION:
-                raise UserWarning('Present configuration version {0} does not match {1}. You can try manual changes on \'{2}\''.format(currentVersion, self.CONFIG_VERSION, configName))
+                raise UserWarning('Present configuration version {0} does not match {1}. You can try manual changes on \'{2}\''.format(
+                    currentVersion, self.CONFIG_VERSION, configName))
 
             # Restoring the the parameters
             self.globStep = config['General'].getint('globStep')
-            self.args.maxLength = config['General'].getint('maxLength')  # We need to restore the model length because of the textData associated and the vocabulary size (TODO: Compatibility mode between different maxLength)
+            # We need to restore the model length because of the textData associated
+            # and the vocabulary size (TODO: Compatibility mode between different
+            # maxLength)
+            self.args.maxLength = config['General'].getint('maxLength')
             self.args.watsonMode = config['General'].getboolean('watsonMode')
             #self.args.datasetTag = config['General'].get('datasetTag')
 
@@ -473,15 +520,14 @@ class Chatbot:
         if self.args.watsonMode:
             self.SENTENCES_PREFIX.reverse()
 
-
     def saveModelParams(self):
         """ Save the params of the model, like the current globStep value
         Warning: if you modify this function, make sure the changes mirror loadModelParams
         """
         config = configparser.ConfigParser()
         config['General'] = {}
-        config['General']['version']  = self.CONFIG_VERSION
-        config['General']['globStep']  = str(self.globStep)
+        config['General']['version'] = self.CONFIG_VERSION
+        config['General']['globStep'] = str(self.globStep)
         config['General']['maxLength'] = str(self.args.maxLength)
         config['General']['watsonMode'] = str(self.args.watsonMode)
 
@@ -489,7 +535,7 @@ class Chatbot:
         config['Network']['hiddenSize'] = str(self.args.hiddenSize)
         config['Network']['numLayers'] = str(self.args.numLayers)
         config['Network']['embeddingSize'] = str(self.args.embeddingSize)
-        
+
         # Keep track of the learning params (but without restoring them)
         config['Training (won\'t be restored)'] = {}
         config['Training (won\'t be restored)']['learningRate'] = str(self.args.learningRate)
