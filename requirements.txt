@@ -1,3 +1,4 @@
 tqdm
 TwitterAPI
 requests_oauthlib
+tensorflow
