@@ -1,12 +1,13 @@
-# Deep Q&A
+# Deep Twitter Q&A
 
 ## Introduction
 
 Have you ever wanted to know how someone special would reply on Twitter? Train a model on their twitter data.
 
 This repository has adapted [Conchylicultor/DeepQA](https://github.com/Conchylicultor/DeepQA) to specifically ONLY work with tweets.
-Note that scraping Twitter and using their API can only yield a maximum of 3200 tweets; most likely less.
+Note that by default scraping Twitter and using their API will only yield you a maximum of 3200 tweets; most likely less.
 Twitter data will be collected by using the Twitter API. More specifically, all the answers of the person of interest in respond to questions is what the model will be trained on.
+
 
 If there are companies out there who would like to have a custom QA application, feel free to contact me.
 
